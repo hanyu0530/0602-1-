@@ -103,7 +103,7 @@ const questions = [
     {
         question: "下列哪項不是資料科學主要工作？",
         options: ["資料收集與清理", "資料分析與建模", "資料視覺化與報告呈現", "完全依賴直覺做決策"],
-        correct: 2
+        correct: 3
     },
     {
         question: "資料科學模型使用的最佳實踐為？",
@@ -113,7 +113,7 @@ const questions = [
     {
         question: "資料視覺化的主要目的是？",
         options: ["製作漂亮圖表以炫耀技術", "將資料轉換成可理解的資訊，支援決策", "完全取代數據分析", "不需考慮使用者理解"],
-        correct: 2
+        correct: 1
     }
 ];
 
