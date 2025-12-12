@@ -21,6 +21,7 @@ let isAnswering = false;
 let currentQuestion = null;
 let questionTimer = 0;
 let particles = []; // 新增：粒子陣列
+let gameMode = 'playing'; // 新增：游戏模式状态
 
 // UI 動畫狀態
 let lastScore = 0;
@@ -39,19 +40,22 @@ const stars = Array.from({ length: 200 }, () => ({
     brightness: Math.random() * 0.5 + 0.5
 }));
 
-// 教育科技知識點
+// 東吳資料科學系知識點
 const knowledgeItems = [
-    { name: "數位學習設計", points: 5, color: '#4CAF50', speed: 2, health: 1, isCorrect: true },
-    { name: "科技融入教學", points: 5, color: '#2196F3', speed: 3, health: 1, isCorrect: true },
-    { name: "學習分析", points: 5, color: '#9C27B0', speed: 2, health: 2, isCorrect: true },
-    { name: "互動式教材", points: 5, color: '#FF9800', speed: 4, health: 1, isCorrect: true },
-    { name: "AR/VR教育", points: 5, color: '#E91E63', speed: 2, health: 3, isCorrect: true },
-    { name: "死記硬背", points: -5, color: '#FF0000', speed: 3, health: 1, isCorrect: false },
-    { name: "填鴨式教學", points: -5, color: '#FF0000', speed: 4, health: 1, isCorrect: false },
-    { name: "機械式學習", points: -5, color: '#FF0000', speed: 2, health: 2, isCorrect: false },
-    { name: "被動學習", points: -5, color: '#FF0000', speed: 3, health: 1, isCorrect: false },
-    { name: "單向灌輸", points: -5, color: '#FF0000', speed: 2, health: 2, isCorrect: false }
+    { name: "Python 程式設計", points: 5, color: '#4CAF50', speed: 2, health: 1, isCorrect: true },
+    { name: "資料處理與清洗", points: 5, color: '#2196F3', speed: 3, health: 1, isCorrect: true },
+    { name: "統計學與機率", points: 5, color: '#9C27B0', speed: 2, health: 2, isCorrect: true },
+    { name: "資料視覺化", points: 5, color: '#FF9800', speed: 4, health: 1, isCorrect: true },
+    { name: "機器學習基礎", points: 5, color: '#E91E63', speed: 2, health: 3, isCorrect: true },
+
+    // 錯誤或不良習慣（負分）
+    { name: "未清洗資料直接分析", points: -5, color: '#FF0000', speed: 3, health: 1, isCorrect: false },
+    { name: "完全不寫註解", points: -5, color: '#FF0000', speed: 4, health: 1, isCorrect: false },
+    { name: "忽略統計基礎", points: -5, color: '#FF0000', speed: 2, health: 2, isCorrect: false },
+    { name: "模型亂套用", points: -5, color: '#FF0000', speed: 3, health: 1, isCorrect: false },
+    { name: "亂用圖表誤導結論", points: -5, color: '#FF0000', speed: 2, health: 2, isCorrect: false }
 ];
+
 
 // 特殊道具
 const powerUpTypes = [
@@ -86,34 +90,35 @@ const powerUpTypes = [
    
 ];
 
-// 教育科技問題庫
+// 資料科學問題庫
 const questions = [
     {
-        question: "數位學習相較於傳統教學模式，其核心特性為何？",
-        options: ["以面對面互動為主", "藉由資訊科技促進自主與彈性學習", "完全依賴教師指導", "不需任何教學規劃"],
+        question: "資料科學中，資料清理的重要性為何？",
+        options: ["未清洗資料即可直接分析", "確保資料正確、完整與一致，以提升分析品質", "只需隨機抽樣資料即可", "清洗資料不會影響分析結果"],
         correct: 1
     },
     {
-        question: "在教學設計理論中，課程設計的核心目的主要在於？",
-        options: ["提高學生標準化測驗成績", "系統化規劃教學活動以提升學習成效", "精簡教師教學時間與負擔", "增加作業以加強練習"],
+        question: "在資料分析流程中，探索性資料分析 (EDA) 的核心目的為？",
+        options: ["直接套用模型做預測", "理解資料分布、特性及異常值", "建立完整的資料庫系統", "只做視覺化不做統計分析"],
         correct: 1
     },
     {
-        question: "下列何者不屬於教育科技的應用範疇？",
-        options: ["數位教學內容開發", "教學管理與學習分析平台建置", "傳統粉筆黑板授課方式", "線上學習系統與互動模組設計"],
+        question: "下列哪項不是資料科學主要工作？",
+        options: ["資料收集與清理", "資料分析與建模", "資料視覺化與報告呈現", "完全依賴直覺做決策"],
         correct: 2
     },
     {
-        question: "相較於傳統教材，數位教材的主要優勢為何？",
-        options: ["可完全取代教師授課", "具高互動性與多媒體整合能力", "製作過程不需專業知識", "完全不需網路或設備支援"],
+        question: "資料科學模型使用的最佳實踐為？",
+        options: ["直接套模型不理解原理", "理解模型假設與演算法原理後再使用", "隨意挑模型以求快速結果", "不需驗證模型效能"],
         correct: 1
     },
     {
-        question: "教育研究的目的是什麼？",
-        options: ["增加學校收入", "提高教師工資", "改進教育實踐", "減少學生數量"],
+        question: "資料視覺化的主要目的是？",
+        options: ["製作漂亮圖表以炫耀技術", "將資料轉換成可理解的資訊，支援決策", "完全取代數據分析", "不需考慮使用者理解"],
         correct: 2
     }
 ];
+
 
 // 粒子類別
 class Particle {
@@ -171,8 +176,10 @@ class Spaceship {
         this.spreadShotTime = 0;
         this.slowTime = false;
         this.slowTimeTime = 0;
-        this.level = 1; // 新增：飛船等級
-        this.upgradeAnimation = 0; // 新增：升級動畫計時器
+        this.level = 1;
+        this.upgradeAnimation = 0;
+        this.targetX = this.x;  // 新增：目标位置
+        this.targetY = this.y;  // 新增：目标位置
     }
 
     draw() {
@@ -265,8 +272,17 @@ class Spaceship {
     }
 
     move(dx, dy) {
-        this.x = Math.max(0, Math.min(CANVAS_WIDTH - this.width, this.x + dx));
-        this.y = Math.max(0, Math.min(CANVAS_HEIGHT - this.height, this.y + dy));
+        // 更新目标位置
+        this.targetX = Math.max(0, Math.min(CANVAS_WIDTH - this.width, this.x + dx));
+        this.targetY = Math.max(0, Math.min(CANVAS_HEIGHT - this.height, this.y + dy));
+        
+        // 平滑移动到目标位置
+        const moveSpeed = this.speedBoost ? 10 : 5;
+        const dx2 = (this.targetX - this.x) / moveSpeed;
+        const dy2 = (this.targetY - this.y) / moveSpeed;
+        
+        this.x += dx2;
+        this.y += dy2;
     }
 
     shoot() {
@@ -578,101 +594,270 @@ const hands = new Hands({
 });
 
 hands.setOptions({
-    maxNumHands: 2,
+    maxNumHands: 1,  // 只检测一只手
     modelComplexity: 1,
-    minDetectionConfidence: 0.7,
+    minDetectionConfidence: 0.5,  // 降低检测置信度阈值
     minTrackingConfidence: 0.5
 });
 
-// 設置攝像頭
+// 设置摄像头
 const video = document.getElementById('videoElement');
 const camera = new Camera(video, {
     onFrame: async () => {
         await hands.send({image: video});
     },
-    width: 320,
-    height: 240
+    width: 640,  // 增加分辨率
+    height: 480
 });
 camera.start();
 
-// 新增：當前食指位置和停留時間
-let currentFingerPosition = null;
-let hoverStartTime = null;
-let hoveredOptionIndex = -1;
+// 添加全局变量来储存手势状态
+let indexFingerPosition = null;
+let fingerStayTime = 0;
+let lastFingerPosition = null;
+let hoveredOption = null;
+let isHandDetected = false;
 
-// 修改手勢識別結果處理
+// 修改 hands.onResults 函数
 hands.onResults((results) => {
     if (!gameStarted) return;
     
     if (results.multiHandLandmarks) {
         const landmarks = results.multiHandLandmarks[0];
         if (landmarks) {
+            // 获取手腕位置
             const wrist = landmarks[0];
-            const x = (1 - wrist.x) * CANVAS_WIDTH;
-            const y = wrist.y * CANVAS_HEIGHT;
+            const wristX = (1 - wrist.x) * CANVAS_WIDTH;
+            const wristY = wrist.y * CANVAS_HEIGHT;
             
-            const dx = (x - player.x) / 10;
-            const dy = (y - player.y) / 10;
-            player.move(dx, dy);
-
+            // 获取食指位置
             const indexFinger = landmarks[8];
-            const middleFinger = landmarks[12];
-            const ringFinger = landmarks[16];
-            const pinkyFinger = landmarks[20];
+            
+            if (gameMode === 'answering') {
+                // 问答模式：使用食指指向选择
 
-            const isIndexBent = indexFinger.y > landmarks[6].y;
-            const isMiddleBent = middleFinger.y > landmarks[10].y;
-            const isRingBent = ringFinger.y > landmarks[14].y;
-            const isPinkyBent = pinkyFinger.y > landmarks[18].y;
-
-            // 更新食指位置
-            currentFingerPosition = {
-                x: (1 - indexFinger.x) * CANVAS_WIDTH,
-                y: indexFinger.y * CANVAS_HEIGHT
-            };
-
-            // 如果正在回答問題，檢查食指是否指向某個選項
-            if (isAnswering && currentFingerPosition) {
-                const { x, y } = currentFingerPosition;
-                let foundOption = false;
+                // 添加检查，确保当前问题和食指标志点存在
+                if (!currentQuestion || !indexFinger) {
+                    console.warn('问答模式：当前问题或食指标志点丢失，跳过此帧');
+                    return; // 如果问题或食指不存在，则跳过此帧的处理
+                }
                 
+                const newPosition = {
+                    x: (1 - indexFinger.x) * CANVAS_WIDTH,
+                    y: indexFinger.y * CANVAS_HEIGHT
+                };
+
+                // 检查手指是否移动
+                if (lastFingerPosition) {
+                    const distance = Math.sqrt(
+                        Math.pow(newPosition.x - lastFingerPosition.x, 2) +
+                        Math.pow(newPosition.y - lastFingerPosition.y, 2)
+                    );
+                    
+                    if (distance < 10) {
+                        fingerStayTime += 16;
+                    } else {
+                        fingerStayTime = 0;
+                        hoveredOption = null;
+                    }
+                }
+                
+                lastFingerPosition = newPosition;
+                indexFingerPosition = newPosition;
+
+                // 检查手指是否指向选项
                 currentQuestion.options.forEach((option, index) => {
-                    const optionY = CANVAS_HEIGHT/2 - 50 + index * 50;
-                    if (y >= optionY - 20 && y <= optionY + 20 &&
-                        x >= CANVAS_WIDTH/2 - 250 && x <= CANVAS_WIDTH/2 + 250) {
-                        foundOption = true;
-                        if (hoveredOptionIndex !== index) {
-                            // 如果指向了新的選項，重置計時器
-                            hoverStartTime = Date.now();
-                            hoveredOptionIndex = index;
-                        } else {
-                            // 如果持續指向同一個選項，檢查停留時間
-                            const hoverDuration = Date.now() - hoverStartTime;
-                            if (hoverDuration >= 2000) { // 2秒
-                                handleAnswer(index);
-                                hoverStartTime = null;
-                                hoveredOptionIndex = -1;
-                            }
+                    const optionY = CANVAS_HEIGHT/2 - 50 + index * 50 + 5;
+                    const optionX = CANVAS_WIDTH/2;
+                    const optionWidth = 500;
+                    const optionHeight = 40;
+                    
+                    if (indexFingerPosition.x >= optionX - optionWidth/2 && 
+                        indexFingerPosition.x <= optionX + optionWidth/2 &&
+                        indexFingerPosition.y >= optionY - optionHeight/2 && 
+                        indexFingerPosition.y <= optionY + optionHeight/2) {
+                        
+                        hoveredOption = index;
+                        
+                        if (fingerStayTime > 1000) {
+                            handleAnswer(index);
                         }
                     }
                 });
+            } else if (gameMode === 'playing') {
+                // 游戏模式：使用手腕控制飞船
+                console.log('=== 游戏模式：检测到手势 ===');
+                console.log('手腕位置:', {x: wristX, y: wristY});
+                console.log('飞船位置:', {x: player.x, y: player.y});
                 
-                if (!foundOption) {
-                    // 如果沒有指向任何選項，重置計時器
-                    hoverStartTime = null;
-                    hoveredOptionIndex = -1;
-                }
-            }
+                // 计算移动距离
+                const dx = wristX - player.x;
+                const dy = wristY - player.y;
+                
+                // 根据距离调整移动速度
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const speed = Math.min(distance / 50, 1);  // 限制最大速度
+                
+                console.log('移动距离:', {dx, dy});
+                console.log('移动速度:', speed);
+                
+                // 应用移动
+                player.move(dx * speed, dy * speed);
 
-            if (isIndexBent && isMiddleBent && isRingBent && isPinkyBent) {
-                const newBullets = player.shoot();
-                if (newBullets) {
-                    bullets.push(...newBullets);
+                // 检测射击手势
+                const middleFinger = landmarks[12];
+                const ringFinger = landmarks[16];
+                const pinkyFinger = landmarks[20];
+
+                const isIndexBent = indexFinger.y > landmarks[6].y;
+                const isMiddleBent = middleFinger.y > landmarks[10].y;
+                const isRingBent = ringFinger.y > landmarks[14].y;
+                const isPinkyBent = pinkyFinger.y > landmarks[18].y;
+
+                if (isIndexBent && isMiddleBent && isRingBent && isPinkyBent) {
+                    const newBullets = player.shoot();
+                    if (newBullets) {
+                        bullets.push(...newBullets);
+                    }
                 }
             }
         }
+    } else {
+        // 重置手势状态
+        indexFingerPosition = null;
+        lastFingerPosition = null;
+        fingerStayTime = 0;
+        hoveredOption = null;
     }
 });
+
+// 修改 drawQuestion 函数
+function drawQuestion() {
+    if (!currentQuestion) return;
+
+    // 繪製半透明背景
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // 繪製問題框
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillRect(CANVAS_WIDTH/2 - 300, CANVAS_HEIGHT/2 - 200, 600, 400);
+
+    // 繪製問題
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('升級問題', CANVAS_WIDTH/2, CANVAS_HEIGHT/2 - 150);
+    
+    ctx.font = '20px Arial';
+    ctx.fillText(currentQuestion.question, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 - 100);
+
+    // 繪製選項
+    ctx.font = '18px Arial';
+    currentQuestion.options.forEach((option, index) => {
+        const y = CANVAS_HEIGHT/2 - 50 + index * 50;
+        
+        // 如果选项被悬停，改变背景颜色
+        if (hoveredOption === index) {
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+        } else {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        }
+        
+        ctx.fillRect(CANVAS_WIDTH/2 - 250, y - 20, 500, 40);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(option, CANVAS_WIDTH/2, y + 5);
+    });
+
+    // 繪製食指指示器
+    if (indexFingerPosition) {
+        // 繪製外圈
+        ctx.beginPath();
+        ctx.arc(indexFingerPosition.x, indexFingerPosition.y, 15, 0, Math.PI * 2);
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 繪製內圈
+        ctx.beginPath();
+        ctx.arc(indexFingerPosition.x, indexFingerPosition.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#00ff00';
+        ctx.fill();
+
+        // 繪製十字準星
+        ctx.beginPath();
+        ctx.moveTo(indexFingerPosition.x - 20, indexFingerPosition.y);
+        ctx.lineTo(indexFingerPosition.x + 20, indexFingerPosition.y);
+        ctx.moveTo(indexFingerPosition.x, indexFingerPosition.y - 20);
+        ctx.lineTo(indexFingerPosition.x, indexFingerPosition.y + 20);
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // 如果正在悬停选项，显示进度条
+        if (hoveredOption !== null) {
+            const progress = Math.min(fingerStayTime / 1000, 1);
+            const barWidth = 100;
+            const barHeight = 5;
+            const barX = indexFingerPosition.x - barWidth / 2;
+            const barY = indexFingerPosition.y - 30;
+
+            // 绘制背景
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+
+            // 绘制进度
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(barX, barY, barWidth * progress, barHeight);
+        }
+    }
+
+    // 繪製倒計時
+    const timeLeft = Math.ceil((10000 - questionTimer) / 1000);
+    ctx.fillStyle = timeLeft <= 3 ? '#ff0000' : '#ffffff';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText(`剩餘時間: ${timeLeft}秒`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 150);
+}
+
+// 修改 handleAnswer 函数
+function handleAnswer(selectedIndex) {
+    console.log('=== 开始处理答案 ===');
+    console.log('当前游戏模式:', gameMode);
+    console.log('当前是否在回答:', isAnswering);
+
+    if (selectedIndex === currentQuestion.correct) {
+        if (level < MAX_LEVEL) { 
+            level++;
+            player.level = level;
+            player.upgradeAnimation = 30;
+            levelProgress = 0;
+            showMessage('答对了！等级提升！', '#00ff00');
+        } else {
+            gameOver = true;
+        }
+    } else {
+        showMessage('答错了！', '#ff0000');
+    }
+
+    // 重置问答相关状态
+    isAnswering = false;
+    currentQuestion = null;
+    questionTimer = 0;
+    fingerStayTime = 0;
+    indexFingerPosition = null;
+    lastFingerPosition = null;
+    hoveredOption = null;
+    
+    // 重置玩家位置到屏幕底部中间
+    player.x = CANVAS_WIDTH / 2 - player.width / 2;
+    player.y = CANVAS_HEIGHT - player.height - 20;
+
+    // 立即切换回游戏模式
+    gameMode = 'playing';
+    console.log('=== 答案处理完成 ===');
+    console.log('切换后的游戏模式:', gameMode);
+    console.log('切换后是否在回答:', isAnswering);
+}
 
 // 繪製背景
 function drawBackground() {
@@ -798,70 +983,6 @@ function drawUI() {
     }
 }
 
-// 繪製問題界面
-function drawQuestion() {
-    if (!currentQuestion) return;
-
-    // 繪製半透明背景
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    // 繪製問題框
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.fillRect(CANVAS_WIDTH/2 - 300, CANVAS_HEIGHT/2 - 200, 600, 400);
-
-    // 繪製問題
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 24px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('升級問題', CANVAS_WIDTH/2, CANVAS_HEIGHT/2 - 150);
-    
-    ctx.font = '20px Arial';
-    ctx.fillText(currentQuestion.question, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 - 100);
-
-    // 繪製選項
-    ctx.font = '18px Arial';
-    currentQuestion.options.forEach((option, index) => {
-        const y = CANVAS_HEIGHT/2 - 50 + index * 50;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.fillRect(CANVAS_WIDTH/2 - 250, y - 20, 500, 40);
-        
-        // 如果當前選項被指向，顯示進度條
-        if (index === hoveredOptionIndex && hoverStartTime) {
-            const progress = Math.min((Date.now() - hoverStartTime) / 2000, 1);
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
-            ctx.fillRect(CANVAS_WIDTH/2 - 250, y - 20, 500 * progress, 40);
-        }
-        
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(option, CANVAS_WIDTH/2, y + 5);
-    });
-
-    // 繪製倒計時
-    const timeLeft = Math.ceil((10000 - questionTimer) / 1000);
-    ctx.fillStyle = timeLeft <= 3 ? '#ff0000' : '#ffffff';
-    ctx.font = 'bold 20px Arial';
-    ctx.fillText(`剩餘時間: ${timeLeft}秒`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 150);
-
-    // 繪製食指指示器
-    if (currentFingerPosition) {
-        const { x, y } = currentFingerPosition;
-        
-        // 繪製外圈
-        ctx.beginPath();
-        ctx.arc(x, y, 20, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // 繪製內圈
-        ctx.beginPath();
-        ctx.arc(x, y, 10, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.fill();
-    }
-}
-
 // 遊戲主循環
 function gameLoop() {
     if (!gameStarted) {
@@ -871,7 +992,6 @@ function gameLoop() {
     }
 
     if (gameOver) {
-        // 如果遊戲結束，只繪製背景和結算畫面
         drawBackground();
         showGameSummary();
         requestAnimationFrame(gameLoop);
@@ -896,37 +1016,12 @@ function gameLoop() {
 
     // 生成敵人
     enemies = enemies.filter(enemy => {
-       enemy.move();
-        // 在敵人繪製之前更新粒子，這樣粒子會在敵人下方
-        // particles = particles.filter(particle => {
-        //     particle.update();
-        //     particle.draw();
-        //     return particle.alpha > 0.1;
-        // });
-        
+        enemy.move();
         enemy.draw();
         
         for (let i = bullets.length - 1; i >= 0; i--) {
             if (enemy.checkCollision(bullets[i])) {
                 enemy.health--;
-                 // 新增：在子彈擊中敵人時創建火花粒子
-                 const impactX = bullets[i].x + bullets[i].width/2;
-                 const impactY = bullets[i].y + bullets[i].height/2;
-                 const particleColor = knowledgeItems[enemy.type].color;
-                 for(let j = 0; j < 10; j++) { // 創建10個火花粒子
-                      // 使用更快的速度和更短的生命週期來模擬火花
-                     const sparkSpeedX = (Math.random() - 0.5) * 10;
-                     const sparkSpeedY = (Math.random() - 0.5) * 10;
-                     const spark = new Particle(impactX, impactY, '#ffff00'); // 火花顏色為黃色
-                     spark.speedX = sparkSpeedX;
-                     spark.speedY = sparkSpeedY;
-                     spark.gravity = 0; // 火花不受重力影響
-                     spark.friction = 0.95; // 輕微摩擦力
-                     spark.alpha = 0.8; // 初始透明度
-                     spark.size = Math.random() * 3 + 1; // 火花粒子較小
-                     particles.push(spark);
-                 }
-
                 bullets.splice(i, 1);
                 if (enemy.health <= 0) {
                     const points = knowledgeItems[enemy.type].points;
@@ -938,28 +1033,30 @@ function gameLoop() {
                         knowledgePoints += Math.abs(points);
                         levelProgress += 1;
                         
-                        // 檢查是否需要顯示問題
-                        if (levelProgress >= level * 10 && !isAnswering) {
-                            isAnswering = true;
-                            currentQuestion = questions[Math.floor(Math.random() * questions.length)];
-                            questionTimer = 0;
+                        // 检查是否需要显示问题
+                        if ((level === 1 && levelProgress >= 1) || (level > 1 && levelProgress >= level * 10)) {
+                            if (!isAnswering) {
+                                console.log('=== 准备切换到问答模式 ===');
+                                console.log('当前游戏模式:', gameMode);
+                                console.log('当前是否在回答:', isAnswering);
+                                
+                                isAnswering = true;
+                                gameMode = 'answering';
+                                currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+                                questionTimer = 0;
+                                
+                                console.log('切换后的游戏模式:', gameMode);
+                                console.log('切换后是否在回答:', isAnswering);
+                            }
                         }
                     } else {
-                        showMessage('錯誤選項！', '#FF0000');
+                        showMessage('错误选项！', '#FF0000');
                     }
-                    
-                    // 新增：創建粒子
-                    const particleColor = knowledgeItems[enemy.type].color;
-                    for(let j = 0; j < 20; j++) { // 創建20個粒子
-                        particles.push(new Particle(enemy.x + enemy.width/2, enemy.y + enemy.height/2, particleColor));
-                    }
-                    
-                    return false; // 敵人被摧毀
+                    return false;
                 }
                 break;
             }
         }
-        
         return !enemy.isOffScreen();
     });
 
@@ -977,10 +1074,10 @@ function gameLoop() {
         powerUpSpawnTimer = 0;
     }
 
-    // 更新和繪製道具 (道具可以在 Boss 戰時保留)
+    // 更新和繪製道具
     powerUps = powerUps.filter(powerUp => {
-       powerUp.move();
-       powerUp.draw();
+        powerUp.move();
+        powerUp.draw();
         
         if (powerUp.checkCollision(player)) {
             applyPowerUp(powerUp.type);
@@ -994,12 +1091,12 @@ function gameLoop() {
     particles = particles.filter(particle => {
         particle.update();
         particle.draw();
-        return particle.alpha > 0.1; // 移除透明度過低的粒子
+        return particle.alpha > 0.1;
     });
 
     // 更新分數、知識點、等級並觸發動畫
     if (score !== lastScore) {
-        scoreAnimationTimer = 20; // 設置動畫持續時間 (幀)
+        scoreAnimationTimer = 20;
         lastScore = score;
     }
     if (knowledgePoints !== lastKnowledgePoints) {
@@ -1047,28 +1144,6 @@ function showMessage(text, color) {
     }
     
     drawMessage();
-}
-
-// 處理答案
-function handleAnswer(selectedIndex) {
-    isAnswering = false;
-    if (selectedIndex === currentQuestion.correct) {
-        // 檢查是否達到最大等級
-        if (level < MAX_LEVEL) { 
-            level++;
-            player.level = level; // 更新飛船等級視覺
-            player.upgradeAnimation = 30; // 觸發升級動畫
-            levelProgress = 0; // 重置進度
-            showMessage('答對了！等級提升！', '#00ff00');
-        } else {
-            // 達到最大等級，遊戲結束
-            gameOver = true;
-            // showGameSummary(); // 在 gameLoop 中處理顯示
-        }
-    } else {
-        showMessage('答錯了！', '#ff0000');
-    }
-    currentQuestion = null;
 }
 
 // 新增：遊戲結算畫面
@@ -1120,6 +1195,58 @@ startButtonElement.addEventListener('click', () => {
         // document.getElementById('gameInfo').style.display = 'block';
     }
 });
+
+// 修改 canvas 點擊事件處理
+canvas.addEventListener('click', (event) => {
+    if (gameOver) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        // 檢查是否點擊了重新開始按鈕
+        if (x >= CANVAS_WIDTH/2 - 100 && x <= CANVAS_WIDTH/2 + 100 &&
+            y >= CANVAS_HEIGHT/2 + 50 && y <= CANVAS_HEIGHT/2 + 100) {
+            // 重置遊戲狀態
+            score = 0;
+            knowledgePoints = 0;
+            level = 1;
+            levelProgress = 0;
+            gameOver = false;
+            gameStarted = true;
+            player.level = 1;
+            enemies = [];
+            bullets = [];
+            powerUps = [];
+            particles = [];
+        }
+        return;
+    }
+
+    if (isAnswering) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        // 檢查是否點擊了選項
+        currentQuestion.options.forEach((option, index) => {
+            // 需要獲取選項在 canvas 上的實際繪製位置和大小
+            // 暫時使用之前繪製問題時的硬編碼位置進行檢查
+            const optionCanvasY = CANVAS_HEIGHT/2 - 50 + index * 50 + 5; // 文字基線的y座標
+            const optionCanvasX = CANVAS_WIDTH/2;
+            const optionWidth = 500;
+            const optionHeight = 40;
+            
+            // 估計選項的可點擊區域
+            if (x >= optionCanvasX - optionWidth/2 && x <= optionCanvasX + optionWidth/2 &&
+                y >= optionCanvasY - optionHeight/2 && y <= optionCanvasY + optionHeight/2) {
+                handleAnswer(index);
+            }
+        });
+    }
+});
+
+// 初始化時隱藏遊戲信息面板，開始遊戲時再顯示 (如果需要)
+// document.getElementById('gameInfo').style.display = 'none';
 
 // 應用道具效果
 function applyPowerUp(type) {
