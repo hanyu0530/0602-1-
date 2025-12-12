@@ -42,7 +42,7 @@ const stars = Array.from({ length: 200 }, () => ({
 
 // 東吳資料科學系知識點
 const knowledgeItems = [
-    { name: "Python 程式設計", points: 5, color: '#4CAF50', speed: 2, health: 1, isCorrect: true },
+    { name: "程式設計", points: 5, color: '#4CAF50', speed: 2, health: 1, isCorrect: true },
     { name: "資料處理與清洗", points: 5, color: '#2196F3', speed: 3, health: 1, isCorrect: true },
     { name: "統計學與機率", points: 5, color: '#9C27B0', speed: 2, health: 2, isCorrect: true },
     { name: "資料視覺化", points: 5, color: '#FF9800', speed: 4, health: 1, isCorrect: true },
